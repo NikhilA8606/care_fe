@@ -57,7 +57,7 @@ export default function KanbanBoard<T extends { id: string }>(
         </div>
       </div>
       <DragDropContext onDragEnd={props.onDragEnd}>
-        <div className="h-full overflow-scroll" ref={board}>
+        <div className="h-full overflow-auto" ref={board}>
           <div className="flex items-stretch px-0 pb-2">
             {props.sections.map((section, i) => (
               <KanbanSection<T>
@@ -92,20 +92,25 @@ export function KanbanSection<T extends { id: string }>(
   const defaultLimit = 14;
   const { t } = useTranslation();
 
-  // should be replaced with useInfiniteQuery when we move over to react query
-
   const fetchNextPage = async (refresh: boolean = false) => {
     if (!refresh && (fetchingNextPage || !hasMore)) return;
-    if (refresh) setPages([]);
+    if (refresh) {
+      setPages([]);
+      setOffset(0);
+    }
     const offsetToUse = refresh ? 0 : offset;
     setFetchingNextPage(true);
     const res = await request(options.route, {
       ...options.options,
-      query: { ...options.options?.query, offsetToUse, limit: defaultLimit },
+      query: {
+        ...options.options?.query,
+        offset: offsetToUse,
+        limit: defaultLimit,
+      },
     });
+    if (res.error) return;
     const newPages = refresh ? [] : [...pages];
     const page = Math.floor(offsetToUse / defaultLimit);
-    if (res.error) return;
     newPages[page] = (res.data as any).results;
     setPages(newPages);
     setHasMore(!!(res.data as any)?.next);
@@ -117,24 +122,30 @@ export function KanbanSection<T extends { id: string }>(
   const items = pages.flat();
 
   useEffect(() => {
-    const onBoardReachEnd = async () => {
-      const sectionElementHeight =
-        sectionRef.current?.getBoundingClientRect().height;
-      const scrolled = props.boardRef.current?.scrollTop;
-      // if user has scrolled 3/4th of the current items
+    const onBoardReachEnd = () => {
       if (
-        scrolled &&
-        sectionElementHeight &&
-        scrolled > sectionElementHeight * (3 / 4)
-      ) {
+        !sectionRef.current ||
+        !props.boardRef.current ||
+        fetchingNextPage ||
+        !hasMore
+      )
+        return;
+
+      const scrollTop = props.boardRef.current.scrollTop;
+      const visibleHeight = props.boardRef.current.offsetHeight;
+      const sectionHeight = sectionRef.current.offsetHeight;
+
+      if (scrollTop + visibleHeight >= sectionHeight - 100) {
         fetchNextPage();
       }
     };
 
-    props.boardRef.current?.addEventListener("scroll", onBoardReachEnd);
+    const debouncedScroll = debounce(onBoardReachEnd, 200);
+
+    props.boardRef.current?.addEventListener("scroll", debouncedScroll);
     return () =>
-      props.boardRef.current?.removeEventListener("scroll", onBoardReachEnd);
-  }, [props.boardRef, fetchingNextPage, hasMore]);
+      props.boardRef.current?.removeEventListener("scroll", debouncedScroll);
+  }, [fetchingNextPage, hasMore, props.boardRef]);
 
   useEffect(() => {
     fetchNextPage(true);
@@ -145,9 +156,7 @@ export function KanbanSection<T extends { id: string }>(
       {(provided) => (
         <div
           ref={provided.innerRef}
-          className={
-            "relative mr-2 w-[300px] shrink-0 rounded-xl bg-secondary-200"
-          }
+          className="relative mr-2 w-[300px] shrink-0 rounded-xl bg-secondary-200"
         >
           <div className="sticky top-0 rounded-xl bg-secondary-200 pt-2">
             <div className="mx-2 flex items-center justify-between rounded-lg border border-secondary-300 bg-white p-4">
@@ -165,22 +174,20 @@ export function KanbanSection<T extends { id: string }>(
                 {t("no_results_found")}
               </div>
             )}
-            {items
-              .filter((item) => item)
-              .map((item, i) => (
-                <Draggable draggableId={item.id} key={i} index={i}>
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className="mx-2 mt-2 w-[284px] rounded-lg border border-secondary-300 bg-white"
-                    >
-                      {props.itemRender(item)}
-                    </div>
-                  )}
-                </Draggable>
-              ))}
+            {items.map((item, i) => (
+              <Draggable draggableId={item.id} key={i} index={i}>
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    className="mx-2 mt-2 w-[284px] rounded-lg border border-secondary-300 bg-white"
+                  >
+                    {props.itemRender(item)}
+                  </div>
+                )}
+              </Draggable>
+            ))}
             {fetchingNextPage && (
               <div className="mt-2 h-[300px] w-[284px] animate-pulse rounded-lg bg-secondary-300" />
             )}
@@ -192,3 +199,11 @@ export function KanbanSection<T extends { id: string }>(
 }
 
 export type KanbanBoardType = typeof KanbanBoard;
+
+function debounce(fn: () => void, delay: number) {
+  let timeout: NodeJS.Timeout | null = null;
+  return () => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(fn, delay);
+  };
+}
