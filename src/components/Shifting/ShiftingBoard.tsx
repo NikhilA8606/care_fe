@@ -1,7 +1,7 @@
 import careConfig from "@careConfig";
+import { DropResult } from "@hello-pangea/dnd";
 import { navigate } from "raviger";
 import { Suspense, lazy, useState } from "react";
-import { DropResult } from "react-beautiful-dnd";
 import { useTranslation } from "react-i18next";
 
 import CareIcon from "@/CAREUI/icons/CareIcon";
