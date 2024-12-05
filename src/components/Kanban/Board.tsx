@@ -9,11 +9,13 @@ import { useTranslation } from "react-i18next";
 
 import CareIcon from "@/CAREUI/icons/CareIcon";
 
+import useDebounce from "@/hooks/useDebounce";
+
 import request from "@/Utils/request/request";
 import { QueryRoute } from "@/Utils/request/types";
 import { QueryOptions } from "@/Utils/request/useQuery";
 
-interface KanbanBoardProps<T extends { id: string }> {
+export interface KanbanBoardProps<T extends { id: string }> {
   title?: ReactNode;
   onDragEnd: OnDragEndResponder<string>;
   sections: {
@@ -29,6 +31,8 @@ interface KanbanBoardProps<T extends { id: string }> {
   }[];
   itemRender: (item: T) => ReactNode;
 }
+
+export type KanbanBoardType<T extends { id: string }> = KanbanBoardProps<T>;
 
 export default function KanbanBoard<T extends { id: string }>(
   props: KanbanBoardProps<T>,
@@ -74,7 +78,7 @@ export default function KanbanBoard<T extends { id: string }>(
   );
 }
 
-export function KanbanSection<T extends { id: string }>(
+function KanbanSection<T extends { id: string }>(
   props: Omit<KanbanBoardProps<T>, "sections" | "onDragEnd"> & {
     section: KanbanBoardProps<T>["sections"][number];
     boardRef: RefObject<HTMLDivElement>;
@@ -121,31 +125,29 @@ export function KanbanSection<T extends { id: string }>(
 
   const items = pages.flat();
 
+  const debouncedScroll = useDebounce(() => {
+    if (
+      !sectionRef.current ||
+      !props.boardRef.current ||
+      fetchingNextPage ||
+      !hasMore
+    )
+      return;
+
+    const scrollTop = props.boardRef.current.scrollTop;
+    const visibleHeight = props.boardRef.current.offsetHeight;
+    const sectionHeight = sectionRef.current.offsetHeight;
+
+    if (scrollTop + visibleHeight >= sectionHeight - 100) {
+      fetchNextPage();
+    }
+  }, 200);
+
   useEffect(() => {
-    const onBoardReachEnd = () => {
-      if (
-        !sectionRef.current ||
-        !props.boardRef.current ||
-        fetchingNextPage ||
-        !hasMore
-      )
-        return;
-
-      const scrollTop = props.boardRef.current.scrollTop;
-      const visibleHeight = props.boardRef.current.offsetHeight;
-      const sectionHeight = sectionRef.current.offsetHeight;
-
-      if (scrollTop + visibleHeight >= sectionHeight - 100) {
-        fetchNextPage();
-      }
-    };
-
-    const debouncedScroll = debounce(onBoardReachEnd, 200);
-
     props.boardRef.current?.addEventListener("scroll", debouncedScroll);
     return () =>
       props.boardRef.current?.removeEventListener("scroll", debouncedScroll);
-  }, [fetchingNextPage, hasMore, props.boardRef]);
+  }, [fetchingNextPage, hasMore, props.boardRef, debouncedScroll]);
 
   useEffect(() => {
     fetchNextPage(true);
@@ -196,14 +198,4 @@ export function KanbanSection<T extends { id: string }>(
       )}
     </Droppable>
   );
-}
-
-export type KanbanBoardType = typeof KanbanBoard;
-
-function debounce(fn: () => void, delay: number) {
-  let timeout: NodeJS.Timeout | null = null;
-  return () => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(fn, delay);
-  };
 }

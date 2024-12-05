@@ -1,6 +1,7 @@
 import careConfig from "@careConfig";
 import { navigate } from "raviger";
 import { Suspense, lazy, useState } from "react";
+import { DropResult } from "react-beautiful-dnd";
 import { useTranslation } from "react-i18next";
 
 import CareIcon from "@/CAREUI/icons/CareIcon";
@@ -14,7 +15,7 @@ import PageTitle from "@/components/Common/PageTitle";
 import Tabs from "@/components/Common/Tabs";
 import { ShiftingModel } from "@/components/Facility/models";
 import SearchInput from "@/components/Form/SearchInput";
-import type { KanbanBoardType } from "@/components/Kanban/Board";
+import type { KanbanBoardProps } from "@/components/Kanban/Board";
 import BadgesList from "@/components/Shifting/ShiftingBadges";
 import ShiftingBlock from "@/components/Shifting/ShiftingBlock";
 import { formatFilter } from "@/components/Shifting/ShiftingCommons";
@@ -30,9 +31,15 @@ import {
 import routes from "@/Utils/request/api";
 import request from "@/Utils/request/request";
 
-const KanbanBoard = lazy(
+function lazyWithProps<T>(
+  factory: () => Promise<{ default: React.ComponentType<T> }>,
+) {
+  return lazy(factory) as React.LazyExoticComponent<React.ComponentType<T>>;
+}
+
+const KanbanBoard = lazyWithProps<KanbanBoardProps<ShiftingModel>>(
   () => import("@/components/Kanban/Board"),
-) as KanbanBoardType;
+);
 
 export default function BoardView() {
   const { qParams, updateQuery, FilterBadges, advancedFilter } = useFilters({
@@ -133,7 +140,7 @@ export default function BoardView() {
         </div>
       </div>
       <Suspense fallback={<Loading />}>
-        <KanbanBoard<ShiftingModel>
+        <KanbanBoard
           title={<BadgesList {...{ qParams, FilterBadges }} />}
           sections={boardFilter.map((board) => ({
             id: board.text,
@@ -157,7 +164,7 @@ export default function BoardView() {
                 />
               </h3>
             ),
-            fetchOptions: (id) => ({
+            fetchOptions: (id: string) => ({
               route: routes.listShiftRequests,
               options: {
                 query: formatFilter({
@@ -167,13 +174,18 @@ export default function BoardView() {
               },
             }),
           }))}
-          onDragEnd={(result) => {
-            if (result.source.droppableId !== result.destination?.droppableId)
+          onDragEnd={(result: DropResult) => {
+            // Ensure destination is not null
+            if (
+              result.destination &&
+              result.source.droppableId !== result.destination.droppableId
+            ) {
               navigate(
-                `/shifting/${result.draggableId}/update?status=${result.destination?.droppableId}`,
+                `/shifting/${result.draggableId}/update?status=${result.destination.droppableId}`,
               );
+            }
           }}
-          itemRender={(shift) => (
+          itemRender={(shift: ShiftingModel) => (
             <ShiftingBlock
               onTransfer={() => setModalFor(shift)}
               shift={shift}

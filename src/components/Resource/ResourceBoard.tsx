@@ -1,5 +1,5 @@
 import { navigate } from "raviger";
-import { Suspense, lazy, useState } from "react";
+import React, { Suspense, lazy, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import CareIcon from "@/CAREUI/icons/CareIcon";
@@ -12,7 +12,7 @@ import PageTitle from "@/components/Common/PageTitle";
 import Tabs from "@/components/Common/Tabs";
 import { ResourceModel } from "@/components/Facility/models";
 import SearchInput from "@/components/Form/SearchInput";
-import type { KanbanBoardType } from "@/components/Kanban/Board";
+import type { KanbanBoardProps } from "@/components/Kanban/Board";
 import BadgesList from "@/components/Resource/ResourceBadges";
 import ResourceBlock from "@/components/Resource/ResourceBlock";
 import { formatFilter } from "@/components/Resource/ResourceCommons";
@@ -25,9 +25,17 @@ import { RESOURCE_CHOICES } from "@/common/constants";
 import routes from "@/Utils/request/api";
 import request from "@/Utils/request/request";
 
-const KanbanBoard = lazy(
+// Helper function to type lazy-loaded components
+function lazyWithProps<T>(
+  factory: () => Promise<{ default: React.ComponentType<T> }>,
+) {
+  return lazy(factory) as React.LazyExoticComponent<React.ComponentType<T>>;
+}
+
+// Correctly lazy-load KanbanBoard with its props
+const KanbanBoard = lazyWithProps<KanbanBoardProps<ResourceModel>>(
   () => import("@/components/Kanban/Board"),
-) as KanbanBoardType;
+);
 
 const resourceStatusOptions = RESOURCE_CHOICES.map((obj) => obj.text);
 
@@ -39,8 +47,7 @@ export default function BoardView() {
     limit: -1,
     cacheBlacklist: ["title"],
   });
-  const [boardFilter, setBoardFilter] = useState(ACTIVE);
-  // eslint-disable-next-line
+  const [boardFilter, setBoardFilter] = useState(resourceStatusOptions);
   const appliedFilters = formatFilter(qParams);
   const { t } = useTranslation();
 
@@ -103,7 +110,7 @@ export default function BoardView() {
         </div>
       </div>
       <Suspense fallback={<Loading />}>
-        <KanbanBoard<ResourceModel>
+        <KanbanBoard
           title={<BadgesList {...{ appliedFilters, FilterBadges }} />}
           sections={boardFilter.map((board) => ({
             id: board,
@@ -127,7 +134,7 @@ export default function BoardView() {
                 />
               </h3>
             ),
-            fetchOptions: (id) => ({
+            fetchOptions: (id: string) => ({
               route: routes.listResourceRequests,
               options: {
                 query: formatFilter({
@@ -143,7 +150,9 @@ export default function BoardView() {
                 `/resource/${result.draggableId}/update?status=${result.destination?.droppableId}`,
               );
           }}
-          itemRender={(resource) => <ResourceBlock resource={resource} />}
+          itemRender={(resource: ResourceModel) => (
+            <ResourceBlock resource={resource} />
+          )}
         />
       </Suspense>
 
