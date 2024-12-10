@@ -32,8 +32,6 @@ export interface KanbanBoardProps<T extends { id: string }> {
   itemRender: (item: T) => ReactNode;
 }
 
-export type KanbanBoardType<T extends { id: string }> = KanbanBoardProps<T>;
-
 export default function KanbanBoard<T extends { id: string }>(
   props: KanbanBoardProps<T>,
 ) {
