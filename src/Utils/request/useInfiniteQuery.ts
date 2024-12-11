@@ -15,7 +15,7 @@ export function useInfiniteQuery<TItem>(
   options?: InfiniteQueryOptions<TItem>,
 ) {
   const [items, setItems] = useState<TItem[]>([]);
-  const [totalCount, setTotalCount] = useState<number>();
+  const [totalCount, setTotalCount] = useState<number>(Infinity);
   const [offset, setOffset] = useState(0);
 
   const { refetch, loading, ...queryResponse } = useQuery(route, {
@@ -55,7 +55,7 @@ export function useInfiniteQuery<TItem>(
     fetchNextPage,
     refetch,
     totalCount,
-    hasMore: items.length < (totalCount ?? 0),
+    hasMore: totalCount ? items.length < totalCount : true,
     ...queryResponse,
   };
 }
