@@ -4,15 +4,14 @@ import {
   Droppable,
   OnDragEndResponder,
 } from "@hello-pangea/dnd";
-import { ReactNode, RefObject, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { ReactNode, RefObject, useEffect, useRef } from "react";
 
 import CareIcon from "@/CAREUI/icons/CareIcon";
 
 import useDebounce from "@/hooks/useDebounce";
 
-import request from "@/Utils/request/request";
-import { QueryRoute } from "@/Utils/request/types";
+import { PaginatedResponse, QueryRoute } from "@/Utils/request/types";
+import { useInfiniteQuery } from "@/Utils/request/useInfiniteQuery";
 import { QueryOptions } from "@/Utils/request/useQuery";
 
 export interface KanbanBoardProps<T extends { id: string }> {
@@ -25,7 +24,7 @@ export interface KanbanBoardProps<T extends { id: string }> {
       id: string,
       ...args: unknown[]
     ) => {
-      route: QueryRoute<unknown>;
+      route: QueryRoute<PaginatedResponse<T>>;
       options?: QueryOptions<unknown>;
     };
   }[];
@@ -83,58 +82,21 @@ function KanbanSection<T extends { id: string }>(
   },
 ) {
   const { section } = props;
-  const [offset, setOffset] = useState(0);
-  const [pages, setPages] = useState<T[][]>([]);
-  const [fetchingNextPage, setFetchingNextPage] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [totalCount, setTotalCount] = useState<number>();
 
-  const options = section.fetchOptions(section.id);
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const defaultLimit = 14;
-  const { t } = useTranslation();
-
-  const fetchNextPage = async (refresh: boolean = false) => {
-    if (!refresh && (fetchingNextPage || !hasMore)) return;
-    if (refresh) {
-      setPages([]);
-      setOffset(0);
-    }
-    const offsetToUse = refresh ? 0 : offset;
-    setFetchingNextPage(true);
-    const res = await request(options.route, {
-      ...options.options,
-      query: {
-        ...options.options?.query,
-        offset: offsetToUse,
-        limit: defaultLimit,
-      },
-    });
-    if (res.error) return;
-    const newPages = refresh ? [] : [...pages];
-    const page = Math.floor(offsetToUse / defaultLimit);
-    newPages[page] = (res.data as any).results;
-    setPages(newPages);
-    setHasMore(!!(res.data as any)?.next);
-    setTotalCount((res.data as any)?.count);
-    setOffset(offsetToUse + defaultLimit);
-    setFetchingNextPage(false);
-  };
-
-  const items = pages.flat();
+  const { items, loading, fetchNextPage, hasMore } = useInfiniteQuery<T>(
+    section.fetchOptions(section.id).route,
+    {
+      ...section.fetchOptions(section.id).options,
+      deduplicateBy: (item) => item.id,
+    },
+  );
 
   const debouncedScroll = useDebounce(() => {
-    if (
-      !sectionRef.current ||
-      !props.boardRef.current ||
-      fetchingNextPage ||
-      !hasMore
-    )
-      return;
+    if (!props.boardRef.current || loading || !hasMore) return;
 
     const scrollTop = props.boardRef.current.scrollTop;
     const visibleHeight = props.boardRef.current.offsetHeight;
-    const sectionHeight = sectionRef.current.offsetHeight;
+    const sectionHeight = props.boardRef.current.scrollHeight;
 
     if (scrollTop + visibleHeight >= sectionHeight - 100) {
       fetchNextPage();
@@ -145,11 +107,7 @@ function KanbanSection<T extends { id: string }>(
     props.boardRef.current?.addEventListener("scroll", debouncedScroll);
     return () =>
       props.boardRef.current?.removeEventListener("scroll", debouncedScroll);
-  }, [fetchingNextPage, hasMore, props.boardRef, debouncedScroll]);
-
-  useEffect(() => {
-    fetchNextPage(true);
-  }, [props.section]);
+  }, [loading, hasMore, debouncedScroll, props.boardRef]); // Add props.boardRef here
 
   return (
     <Droppable droppableId={section.id}>
@@ -158,22 +116,7 @@ function KanbanSection<T extends { id: string }>(
           ref={provided.innerRef}
           className="relative mr-2 w-[300px] shrink-0 rounded-xl bg-secondary-200"
         >
-          <div className="sticky top-0 rounded-xl bg-secondary-200 pt-2">
-            <div className="mx-2 flex items-center justify-between rounded-lg border border-secondary-300 bg-white p-4">
-              <div>{section.title}</div>
-              <div>
-                <span className="ml-2 rounded-lg bg-secondary-300 px-2">
-                  {typeof totalCount === "undefined" ? "..." : totalCount}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div ref={sectionRef}>
-            {!fetchingNextPage && totalCount === 0 && (
-              <div className="flex items-center justify-center py-10 text-secondary-500">
-                {t("no_results_found")}
-              </div>
-            )}
+          <div ref={props.boardRef}>
             {items.map((item, i) => (
               <Draggable draggableId={item.id} key={i} index={i}>
                 {(provided) => (
@@ -188,7 +131,7 @@ function KanbanSection<T extends { id: string }>(
                 )}
               </Draggable>
             ))}
-            {fetchingNextPage && (
+            {loading && (
               <div className="mt-2 h-[300px] w-[284px] animate-pulse rounded-lg bg-secondary-300" />
             )}
           </div>
