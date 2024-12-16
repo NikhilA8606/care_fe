@@ -229,3 +229,33 @@ Cypress.Commands.add("verifyContentPresence", (selector, texts) => {
     });
   });
 });
+
+Cypress.Commands.add("verifyErrorMessages", (errorMessages: string[]) => {
+  const selector = ".error-text"; // Static selector
+  cy.get(selector).then(($errors) => {
+    const displayedErrorMessages = $errors
+      .map((_, el) => Cypress.$(el).text())
+      .get();
+    errorMessages.forEach((errorMessage) => {
+      expect(displayedErrorMessages).to.include(errorMessage);
+    });
+  });
+});
+
+Cypress.Commands.add(
+  "typeIntoField",
+  (
+    selector: string,
+    value: string,
+    options: { clearBeforeTyping?: boolean } = {},
+  ) => {
+    const { clearBeforeTyping = false } = options;
+    const inputField = cy.get(selector);
+
+    if (clearBeforeTyping) {
+      inputField.clear(); // Clear the input field
+    }
+
+    inputField.click().type(value); // Click and type the new value
+  },
+);

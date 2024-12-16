@@ -45,6 +45,12 @@ declare global {
         selector: string,
         texts: string[],
       ): Chainable<Element>;
+      verifyErrorMessages(errorMessages: string[]): Chainable<Subject>;
+      typeIntoField(
+        selector: string,
+        value: string,
+        options?: { clearBeforeTyping?: boolean },
+      ): Chainable<Element>;
     }
   }
 }
