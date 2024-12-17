@@ -4,15 +4,16 @@ import {
   Droppable,
   OnDragEndResponder,
 } from "@hello-pangea/dnd";
-import { ReactNode, RefObject, useEffect, useRef } from "react";
+import { ReactNode, RefObject, useEffect, useRef, useState } from "react";
 
 import CareIcon from "@/CAREUI/icons/CareIcon";
 
-import useDebounce from "@/hooks/useDebounce";
-
-import { PaginatedResponse, QueryRoute } from "@/Utils/request/types";
-import { useInfiniteQuery } from "@/Utils/request/useInfiniteQuery";
-import { QueryOptions } from "@/Utils/request/useQuery";
+import {
+  PaginatedResponse,
+  QueryParams,
+  QueryRoute,
+} from "@/Utils/request/types";
+import useTanStackQueryInstead from "@/Utils/request/useQuery";
 
 export interface KanbanBoardProps<T extends { id: string }> {
   title?: ReactNode;
@@ -25,7 +26,7 @@ export interface KanbanBoardProps<T extends { id: string }> {
       ...args: unknown[]
     ) => {
       route: QueryRoute<PaginatedResponse<T>>;
-      options?: QueryOptions<unknown>;
+      options?: { query?: QueryParams };
     };
   }[];
   itemRender: (item: T) => ReactNode;
@@ -83,31 +84,61 @@ function KanbanSection<T extends { id: string }>(
 ) {
   const { section } = props;
 
-  const { items, loading, fetchNextPage, hasMore } = useInfiniteQuery<T>(
-    section.fetchOptions(section.id).route,
-    {
-      ...section.fetchOptions(section.id).options,
-      deduplicateBy: (item) => item.id,
-    },
-  );
+  const [items, setItems] = useState<T[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+  const [nextPage, setNextPage] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState<number>(0);
 
-  const debouncedScroll = useDebounce(() => {
-    if (!props.boardRef.current || loading || !hasMore) return;
-
-    const scrollTop = props.boardRef.current.scrollTop;
-    const visibleHeight = props.boardRef.current.offsetHeight;
-    const sectionHeight = props.boardRef.current.scrollHeight;
-
-    if (scrollTop + visibleHeight >= sectionHeight - 100) {
-      fetchNextPage();
-    }
-  }, 200);
+  const { data, loading, refetch } = useTanStackQueryInstead<
+    PaginatedResponse<T>
+  >(section.fetchOptions(section.id).route, {
+    ...section.fetchOptions(section.id).options,
+    query: section.fetchOptions(section.id).options?.query as QueryParams,
+  });
 
   useEffect(() => {
-    props.boardRef.current?.addEventListener("scroll", debouncedScroll);
-    return () =>
-      props.boardRef.current?.removeEventListener("scroll", debouncedScroll);
-  }, [loading, hasMore, debouncedScroll, props.boardRef]); // Add props.boardRef here
+    if (data?.results) {
+      setItems((prevItems) => {
+        const newItems = data.results.filter(
+          (newItem) => !prevItems.some((item) => item.id === newItem.id),
+        );
+        return [...prevItems, ...newItems];
+      });
+      setNextPage(data.next || null);
+      setTotalCount(data.count || 0);
+    }
+  }, [data]);
+
+  const fetchNextPage = () => {
+    if (loading || isFetching || !nextPage) return;
+    setIsFetching(true);
+    refetch().finally(() => setIsFetching(false));
+  };
+
+  useEffect(() => {
+    const currentRef = props.boardRef.current;
+
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const lastEntry = entries[0];
+        if (lastEntry.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { root: currentRef, threshold: 0.5 },
+    );
+
+    const lastItem = currentRef?.lastElementChild;
+    if (lastItem) observer.observe(lastItem);
+
+    return () => {
+      if (lastItem) observer.unobserve(lastItem);
+    };
+  }, [nextPage, loading, isFetching]);
+
+  // console.log("Items:", items);
 
   return (
     <Droppable droppableId={section.id}>
@@ -116,9 +147,20 @@ function KanbanSection<T extends { id: string }>(
           ref={provided.innerRef}
           className="relative mr-2 w-[300px] shrink-0 rounded-xl bg-secondary-200"
         >
-          <div ref={props.boardRef}>
+          <div className="sticky top-0 rounded-xl bg-secondary-200 pt-2">
+            <div className="mx-2 flex items-center justify-between rounded-lg border border-secondary-300 bg-white p-4">
+              <div>{section.title}</div>
+              <div>
+                <span className="ml-2 rounded-lg bg-secondary-300 px-2">
+                  {totalCount}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
             {items.map((item, i) => (
-              <Draggable draggableId={item.id} key={i} index={i}>
+              <Draggable draggableId={item.id} key={item.id} index={i}>
                 {(provided) => (
                   <div
                     ref={provided.innerRef}
@@ -131,9 +173,12 @@ function KanbanSection<T extends { id: string }>(
                 )}
               </Draggable>
             ))}
-            {loading && (
-              <div className="mt-2 h-[300px] w-[284px] animate-pulse rounded-lg bg-secondary-300" />
-            )}
+
+            {loading || isFetching ? (
+              <div className="mt-2 h-[50px] w-[284px] animate-pulse rounded-lg bg-secondary-300">
+                Loading...
+              </div>
+            ) : null}
           </div>
         </div>
       )}
