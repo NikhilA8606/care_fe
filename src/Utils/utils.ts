@@ -396,7 +396,6 @@ export const formatPatientAge = (
   abbreviated = false,
 ) => {
   const suffixes = getRelativeDateSuffix(abbreviated);
-
   const start = dayjs(
     obj.date_of_birth
       ? new Date(obj.date_of_birth)
@@ -415,9 +414,7 @@ export const formatPatientAge = (
   // Skip representing as no. of months/days if we don't know the date of birth
   // since it would anyways be inaccurate.
   if (!obj.date_of_birth) {
-    return abbreviated
-      ? `Born ${obj.year_of_birth}`
-      : `Born on ${obj.year_of_birth}`;
+    return abbreviated ? `${obj.age} Y` : `Born on ${obj.year_of_birth}`;
   }
 
   const month = end.diff(start, "month");
