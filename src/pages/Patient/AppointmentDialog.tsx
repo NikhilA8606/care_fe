@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -38,7 +37,6 @@ function AppointmentDialog(props: {
       },
     }),
     onSuccess: () => {
-      console.log("Mutation Success!");
       queryClient.invalidateQueries({
         queryKey: ["appointment", tokenData?.phoneNumber],
       });
@@ -46,9 +44,6 @@ function AppointmentDialog(props: {
     },
   });
   const { appointment, open, onOpenChange } = props;
-  useEffect(() => {
-    console.log("IsOpen", open);
-  }, [open]);
 
   if (!appointment) return <></>;
 
