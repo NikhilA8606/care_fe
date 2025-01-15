@@ -18,7 +18,7 @@ import { formatName } from "@/Utils/utils";
 import PublicAppointmentApi from "@/types/scheduling/PublicAppointmentApi";
 import { Appointment } from "@/types/scheduling/schedule";
 
-import AppointmentDialog from "./AppointmentDialog";
+import AppointmentDialog from "./components/AppointmentDialog";
 
 function PatientIndex() {
   const { t } = useTranslation();
