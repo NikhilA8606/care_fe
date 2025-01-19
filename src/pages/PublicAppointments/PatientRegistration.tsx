@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Form,
   FormControl,
@@ -20,8 +21,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-
-import DateFormField from "@/components/Form/FormFields/DateFormField";
 
 import { usePatientContext } from "@/hooks/usePatientUser";
 
@@ -320,24 +319,11 @@ export function PatientRegistration(props: PatientRegistrationProps) {
                       <FormItem className="flex flex-col">
                         <FormLabel required>{t("date_of_birth")}</FormLabel>
                         <FormControl>
-                          <DateFormField
-                            name="date_of_birth"
-                            value={
+                          <DatePicker
+                            date={
                               field.value ? new Date(field.value) : undefined
                             }
-                            onChange={(dateObj: {
-                              name: string;
-                              value: Date;
-                            }) => {
-                              if (dateObj?.value instanceof Date) {
-                                field.onChange(dateObj.value.toISOString());
-                              } else {
-                                field.onChange(null);
-                              }
-                            }}
-                            disableFuture
-                            min={new Date(1900, 0, 1)}
-                            className="-mb-6"
+                            onChange={(date) => field.onChange(date)}
                           />
                         </FormControl>
                         <FormMessage />
