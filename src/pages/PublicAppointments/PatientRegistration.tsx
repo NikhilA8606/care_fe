@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
+import DateField from "@/components/ui/datefield";
 import {
   Form,
   FormControl,
@@ -319,15 +319,13 @@ export function PatientRegistration(props: PatientRegistrationProps) {
                       <FormItem className="flex flex-col">
                         <FormLabel required>{t("date_of_birth")}</FormLabel>
                         <FormControl>
-                          <DatePicker
-                            date={
-                              field.value ? new Date(field.value) : undefined
+                          <DateField
+                            value={
+                              typeof field.value === "string"
+                                ? field.value
+                                : field.value?.toISOString().split("T")[0]
                             }
-                            onChange={(date) => field.onChange(date)}
-                            disabled={(date) =>
-                              date <= new Date("1900-01-01") ||
-                              date >= new Date()
-                            }
+                            onChange={field.onChange}
                           />
                         </FormControl>
                         <FormMessage />
