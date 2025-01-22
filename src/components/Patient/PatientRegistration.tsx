@@ -12,7 +12,7 @@ import SectionNavigator from "@/CAREUI/misc/SectionNavigator";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import DateField from "@/components/ui/datefield";
+import DateField from "@/components/ui/date-field";
 import {
   Form,
   FormControl,
@@ -514,8 +514,14 @@ export default function PatientRegistration(
                       <FormItem>
                         <FormControl>
                           <DateField
-                            value={field.value}
-                            onChange={field.onChange}
+                            date={
+                              field.value ? new Date(field.value) : undefined
+                            }
+                            onChange={(date) =>
+                              field.onChange(date?.toISOString())
+                            }
+                            disabled={false}
+                            id="dob"
                           />
                         </FormControl>
                         <FormMessage />

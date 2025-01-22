@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import DateField from "@/components/ui/datefield";
+import DateField from "@/components/ui/date-field";
 import {
   Form,
   FormControl,
@@ -320,12 +320,14 @@ export function PatientRegistration(props: PatientRegistrationProps) {
                         <FormLabel required>{t("date_of_birth")}</FormLabel>
                         <FormControl>
                           <DateField
-                            value={
-                              typeof field.value === "string"
-                                ? field.value
-                                : field.value?.toISOString().split("T")[0]
+                            date={
+                              field.value ? new Date(field.value) : undefined
                             }
-                            onChange={field.onChange}
+                            onChange={(date) =>
+                              field.onChange(date?.toISOString())
+                            }
+                            disabled
+                            id="dob"
                           />
                         </FormControl>
                         <FormMessage />
