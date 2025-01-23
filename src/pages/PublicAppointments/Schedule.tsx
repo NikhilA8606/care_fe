@@ -331,15 +331,16 @@ export function ScheduleAppointment(props: AppointmentsProps) {
                                 <span
                                   className={cn(
                                     "text-xs group-hover:text-inherit",
+                                    percentage >= 1
+                                      ? "text-gray-400"
+                                      : percentage >= 0.8
+                                        ? "text-red-600"
+                                        : percentage >= 0.6
+                                          ? "text-yellow-600"
+                                          : "text-green-600",
                                     selectedSlot?.id === slot.id
                                       ? "text-white"
-                                      : percentage >= 1
-                                        ? "text-gray-400"
-                                        : percentage >= 0.8
-                                          ? "text-red-600"
-                                          : percentage >= 0.6
-                                            ? "text-yellow-600"
-                                            : "text-green-600",
+                                      : "",
                                   )}
                                 >
                                   {availability.tokens_per_slot -
