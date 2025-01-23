@@ -30,11 +30,7 @@ export default function DateField({
   const [year, setYear] = useState(date ? date.getFullYear().toString() : "");
 
   const isValidDate = (year: string, month: string, day: string): boolean => {
-    const parsedDate = dayjs(
-      `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`,
-      "YYYY-MM-DD",
-      true,
-    );
+    const parsedDate = dayjs(`${year}-${month}-${day}`, "YYYY-MM-DD", true);
     return parsedDate.isValid();
   };
 
