@@ -338,9 +338,7 @@ export function ScheduleAppointment(props: AppointmentsProps) {
                                         : percentage >= 0.6
                                           ? "text-yellow-600"
                                           : "text-green-600",
-                                    selectedSlot?.id === slot.id
-                                      ? "text-white"
-                                      : "",
+                                    selectedSlotId === slot.id && "text-white",
                                   )}
                                 >
                                   {availability.tokens_per_slot -
