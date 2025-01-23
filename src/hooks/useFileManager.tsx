@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { t } from "i18next";
 import { useState } from "react";
+import { Trans } from "react-i18next";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -294,8 +295,11 @@ export default function useFileManager(
         >
           <div>
             <Label className="text-gray-800 mb-2">
-              State the reason for archiving <b>{archiveDialogueOpen?.name}</b>{" "}
-              file?
+              <Trans
+                i18nKey="state_reason_for_archiving"
+                values={{ name: archiveDialogueOpen?.name }}
+                components={{ strong: <strong /> }}
+              />
             </Label>
             <Textarea
               name="editFileName"
@@ -323,7 +327,7 @@ export default function useFileManager(
               {t("cancel")}
             </Button>
             <Button type="submit" variant="primary" disabled={archiving}>
-              {t("Proceed")}
+              {t("proceed")}
             </Button>
           </div>
         </form>

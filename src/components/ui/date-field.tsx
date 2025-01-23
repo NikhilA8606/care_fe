@@ -4,10 +4,12 @@ import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import dayjs from "@/Utils/dayjs";
+
 interface DateFieldProps {
   date?: Date;
   onChange?: (date?: Date) => void;
-  disabled?: (date: Date) => boolean;
+  disabled?: boolean;
   id: string;
 }
 
@@ -28,16 +30,8 @@ export default function DateField({
   const [year, setYear] = useState(date ? date.getFullYear().toString() : "");
 
   const isValidDate = (year: string, month: string, day: string): boolean => {
-    const parsedYear = parseInt(year, 10);
-    const parsedMonth = parseInt(month, 10) - 1;
-    const parsedDay = parseInt(day, 10);
-    const testDate = new Date(parsedYear, parsedMonth, parsedDay);
-    return (
-      !isNaN(testDate.getTime()) &&
-      testDate.getFullYear() === parsedYear &&
-      testDate.getMonth() === parsedMonth &&
-      testDate.getDate() === parsedDay
-    );
+    const parsedDate = dayjs(`${year}-${month}-${day}`, "YYYY-MM-DD", true);
+    return parsedDate.isValid();
   };
 
   const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,14 +40,14 @@ export default function DateField({
 
     if (
       newDay.length === 2 &&
-      parseInt(newDay, 10) >= 1 &&
-      parseInt(newDay, 10) <= 31
+      parseInt(newDay) >= 1 &&
+      parseInt(newDay) <= 31
     ) {
       if (isValidDate(year, month, newDay) && onChange) {
         const updatedDate = new Date(
-          parseInt(year, 10),
-          parseInt(month, 10) - 1,
-          parseInt(newDay, 10),
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(newDay),
         );
         onChange(updatedDate);
       }
@@ -67,14 +61,14 @@ export default function DateField({
 
     if (
       newMonth.length === 2 &&
-      parseInt(newMonth, 10) >= 1 &&
-      parseInt(newMonth, 10) <= 12
+      parseInt(newMonth) >= 1 &&
+      parseInt(newMonth) <= 12
     ) {
       if (isValidDate(year, newMonth, day) && onChange) {
         const updatedDate = new Date(
-          parseInt(year, 10),
-          parseInt(newMonth, 10) - 1,
-          parseInt(day, 10),
+          parseInt(year),
+          parseInt(newMonth) - 1,
+          parseInt(day),
         );
         onChange(updatedDate);
       }
@@ -87,12 +81,12 @@ export default function DateField({
     const newYear = e.target.value;
     setYear(newYear);
 
-    if (newYear.length === 4 && parseInt(newYear, 10) >= 1900) {
+    if (newYear.length === 4 && parseInt(newYear) >= 1900) {
       if (isValidDate(newYear, month, day) && onChange) {
         const updatedDate = new Date(
-          parseInt(newYear, 10),
-          parseInt(month, 10) - 1,
-          parseInt(day, 10),
+          parseInt(newYear),
+          parseInt(month) - 1,
+          parseInt(day),
         );
         onChange(updatedDate);
       }
@@ -112,7 +106,7 @@ export default function DateField({
           max={31}
           id={`${id}-day-input`}
           className="w-[10rem]"
-          disabled={disabled ? disabled(new Date()) : false}
+          disabled={disabled}
         />
       </div>
 
@@ -127,7 +121,7 @@ export default function DateField({
           max={12}
           id={`${id}-month-input`}
           className="w-[10rem]"
-          disabled={disabled ? disabled(new Date()) : false}
+          disabled={disabled}
         />
       </div>
 
@@ -141,7 +135,7 @@ export default function DateField({
           min={1900}
           id={`${id}-year-input`}
           className="w-[10rem]"
-          disabled={disabled ? disabled(new Date()) : false}
+          disabled={disabled}
         />
       </div>
     </div>
