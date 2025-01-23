@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 interface DateFieldProps {
   date?: Date;
   onChange?: (date?: Date) => void;
-  disabled: boolean;
+  disabled?: (date: Date) => boolean;
   id: string;
 }
 
@@ -14,56 +15,87 @@ export default function DateField({
   date,
   onChange,
   disabled,
+  id,
 }: DateFieldProps) {
   const { t } = useTranslation();
 
-  const year = date ? date.getFullYear().toString() : "";
-  const month = date ? (date.getMonth() + 1).toString().padStart(2, "0") : "";
-  const day = date ? date.getDate().toString().padStart(2, "0") : "";
+  const [day, setDay] = useState(
+    date ? date.getDate().toString().padStart(2, "0") : "",
+  );
+  const [month, setMonth] = useState(
+    date ? (date.getMonth() + 1).toString().padStart(2, "0") : "",
+  );
+  const [year, setYear] = useState(date ? date.getFullYear().toString() : "");
+
+  const isValidDate = (year: string, month: string, day: string): boolean => {
+    const parsedYear = parseInt(year, 10);
+    const parsedMonth = parseInt(month, 10) - 1;
+    const parsedDay = parseInt(day, 10);
+    const testDate = new Date(parsedYear, parsedMonth, parsedDay);
+    return (
+      !isNaN(testDate.getTime()) &&
+      testDate.getFullYear() === parsedYear &&
+      testDate.getMonth() === parsedMonth &&
+      testDate.getDate() === parsedDay
+    );
+  };
 
   const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDay = e.target.value;
-    if (newDay.length > 0 && onChange) {
-      const updatedDate = new Date(
-        parseInt(year || "1900", 10),
-        (parseInt(month || "01", 10) || 1) - 1,
-        parseInt(newDay, 10) || 1,
-      );
-      onChange(updatedDate);
-    }
+    setDay(newDay);
 
-    const dayValue = parseInt(newDay, 10);
-    if (newDay.length <= 2 && dayValue >= 1 && dayValue <= 31) {
-      document.getElementById("dob-month-input")?.focus();
+    if (
+      newDay.length === 2 &&
+      parseInt(newDay, 10) >= 1 &&
+      parseInt(newDay, 10) <= 31
+    ) {
+      if (isValidDate(year, month, newDay) && onChange) {
+        const updatedDate = new Date(
+          parseInt(year, 10),
+          parseInt(month, 10) - 1,
+          parseInt(newDay, 10),
+        );
+        onChange(updatedDate);
+      }
+      document.getElementById(`${id}-month-input`)?.focus();
     }
   };
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMonth = e.target.value;
-    if (onChange) {
-      const updatedDate = new Date(
-        parseInt(year, 10) || 0,
-        (parseInt(newMonth, 10) || 1) - 1,
-        parseInt(day, 10) || 1,
-      );
-      onChange(updatedDate);
-    }
+    setMonth(newMonth);
 
-    const monthValue = parseInt(newMonth, 10);
-    if (newMonth.length <= 2 && monthValue >= 1 && monthValue <= 12) {
-      document.getElementById("dob-year-input")?.focus();
+    if (
+      newMonth.length === 2 &&
+      parseInt(newMonth, 10) >= 1 &&
+      parseInt(newMonth, 10) <= 12
+    ) {
+      if (isValidDate(year, newMonth, day) && onChange) {
+        const updatedDate = new Date(
+          parseInt(year, 10),
+          parseInt(newMonth, 10) - 1,
+          parseInt(day, 10),
+        );
+        onChange(updatedDate);
+      }
+
+      document.getElementById(`${id}-year-input`)?.focus();
     }
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newYear = e.target.value;
-    if (onChange) {
-      const updatedDate = new Date(
-        parseInt(newYear, 10) || 0,
-        (parseInt(month, 10) || 1) - 1,
-        parseInt(day, 10) || 1,
-      );
-      onChange(updatedDate);
+    setYear(newYear);
+
+    if (newYear.length === 4 && parseInt(newYear, 10) >= 1900) {
+      if (isValidDate(newYear, month, day) && onChange) {
+        const updatedDate = new Date(
+          parseInt(newYear, 10),
+          parseInt(month, 10) - 1,
+          parseInt(day, 10),
+        );
+        onChange(updatedDate);
+      }
     }
   };
 
@@ -76,11 +108,11 @@ export default function DateField({
           placeholder="DD"
           value={day}
           onChange={handleDayChange}
-          disabled={disabled}
           min={1}
           max={31}
-          id="dob-day-input"
+          id={`${id}-day-input`}
           className="w-[10rem]"
+          disabled={disabled ? disabled(new Date()) : false}
         />
       </div>
 
@@ -91,11 +123,11 @@ export default function DateField({
           placeholder="MM"
           value={month}
           onChange={handleMonthChange}
-          disabled={disabled}
           min={1}
           max={12}
-          id="dob-month-input"
+          id={`${id}-month-input`}
           className="w-[10rem]"
+          disabled={disabled ? disabled(new Date()) : false}
         />
       </div>
 
@@ -106,11 +138,10 @@ export default function DateField({
           placeholder="YYYY"
           value={year}
           onChange={handleYearChange}
-          disabled={disabled}
-          min={1900}
           max={2100}
-          id="dob-year-input"
+          id={`${id}-year-input`}
           className="w-[10rem]"
+          disabled={disabled ? disabled(new Date()) : false}
         />
       </div>
     </div>

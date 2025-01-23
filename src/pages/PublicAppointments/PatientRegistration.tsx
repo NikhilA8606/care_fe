@@ -326,7 +326,6 @@ export function PatientRegistration(props: PatientRegistrationProps) {
                             onChange={(date) =>
                               field.onChange(date?.toISOString())
                             }
-                            disabled
                             id="dob"
                           />
                         </FormControl>

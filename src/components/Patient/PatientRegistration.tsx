@@ -520,7 +520,6 @@ export default function PatientRegistration(
                             onChange={(date) =>
                               field.onChange(date?.toISOString())
                             }
-                            disabled={false}
                             id="dob"
                           />
                         </FormControl>
