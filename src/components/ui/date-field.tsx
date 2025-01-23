@@ -138,7 +138,7 @@ export default function DateField({
           placeholder="YYYY"
           value={year}
           onChange={handleYearChange}
-          max={2100}
+          min={1900}
           id={`${id}-year-input`}
           className="w-[10rem]"
           disabled={disabled ? disabled(new Date()) : false}
