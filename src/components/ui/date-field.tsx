@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,11 @@ interface DateFieldProps {
   id: string;
 }
 
+const isValidDate = (year: string, month: string, day: string): boolean => {
+  const parsedDate = dayjs(`${year}-${month}-${day}`, "YYYY-MM-DD", true);
+  return parsedDate.isValid();
+};
+
 export default function DateField({
   date,
   onChange,
@@ -20,19 +25,21 @@ export default function DateField({
   id,
 }: DateFieldProps) {
   const { t } = useTranslation();
+  const [day, setDay] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
 
-  const [day, setDay] = useState(
-    date ? date.getDate().toString().padStart(2, "0") : "",
-  );
-  const [month, setMonth] = useState(
-    date ? (date.getMonth() + 1).toString().padStart(2, "0") : "",
-  );
-  const [year, setYear] = useState(date ? date.getFullYear().toString() : "");
-
-  const isValidDate = (year: string, month: string, day: string): boolean => {
-    const parsedDate = dayjs(`${year}-${month}-${day}`, "YYYY-MM-DD", true);
-    return parsedDate.isValid();
-  };
+  useEffect(() => {
+    if (date) {
+      setDay(date.getDate().toString().padStart(2, "0"));
+      setMonth((date.getMonth() + 1).toString().padStart(2, "0"));
+      setYear(date.getFullYear().toString());
+    } else {
+      setDay("");
+      setMonth("");
+      setYear("");
+    }
+  }, [date]);
 
   const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDay = e.target.value;
