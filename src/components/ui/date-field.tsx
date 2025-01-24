@@ -10,7 +10,7 @@ interface DateFieldProps {
   date?: Date;
   onChange?: (date?: Date) => void;
   disabled?: boolean;
-  id: string;
+  id?: string;
 }
 
 const isValidDate = (year: string, month: string, day: string): boolean => {
@@ -22,7 +22,7 @@ export default function DateField({
   date,
   onChange,
   disabled,
-  id,
+  id = "date-field",
 }: DateFieldProps) {
   const { t } = useTranslation();
   const [day, setDay] = useState("");
