@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-interface AutoCompleteOption {
+export interface AutoCompleteOption {
   label: string;
   value: string;
 }
