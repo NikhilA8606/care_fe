@@ -261,7 +261,7 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
               <Textarea
                 rows={5}
                 name="reason"
-                placeholder="Type your description here"
+                placeholder={t("request_reason_placeholder")}
                 value={state.form.reason}
                 onChange={(e) =>
                   handleChange({ name: e.target.name, value: e.target.value })
