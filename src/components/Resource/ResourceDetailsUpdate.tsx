@@ -1,4 +1,3 @@
-import { Textarea } from "@headlessui/react";
 import { t } from "i18next";
 import { navigate, useQueryParams } from "raviger";
 import { useReducer, useState } from "react";
@@ -8,6 +7,7 @@ import Card from "@/CAREUI/display/Card";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 import CircularProgress from "@/components/Common/CircularProgress";
 import { FacilitySelect } from "@/components/Common/FacilitySelect";
