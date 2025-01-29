@@ -1,3 +1,4 @@
+import { Textarea } from "@headlessui/react";
 import { t } from "i18next";
 import { navigate, useQueryParams } from "raviger";
 import { useReducer, useState } from "react";
@@ -6,6 +7,7 @@ import { toast } from "sonner";
 import Card from "@/CAREUI/display/Card";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 import CircularProgress from "@/components/Common/CircularProgress";
 import { FacilitySelect } from "@/components/Common/FacilitySelect";
@@ -15,7 +17,6 @@ import UserAutocomplete from "@/components/Common/UserAutocompleteFormField";
 import { FieldLabel } from "@/components/Form/FormFields/FormField";
 import RadioFormField from "@/components/Form/FormFields/RadioFormField";
 import { SelectFormField } from "@/components/Form/FormFields/SelectFormField";
-import TextAreaFormField from "@/components/Form/FormFields/TextAreaFormField";
 import TextFormField from "@/components/Form/FormFields/TextFormField";
 import { FieldChangeEvent } from "@/components/Form/FormFields/Utils";
 import { UserModel } from "@/components/Users/models";
@@ -254,15 +255,23 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
             </div>
 
             <div className="md:col-span-2">
-              <TextAreaFormField
+              <Label className="text-gray-700 mb-3 mt-1">
+                {t("request_reason")}
+              </Label>
+              <Textarea
                 rows={5}
                 name="reason"
                 placeholder="Type your description here"
                 value={state.form.reason}
-                onChange={handleChange}
-                label="Reason of Request*"
-                error={state.errors.reason}
+                onChange={(e) =>
+                  handleChange({ name: e.target.name, value: e.target.value })
+                }
               />
+              {state.errors.reason && (
+                <p className="text-red-500 text-sm mt-2">
+                  {state.errors.emergency}
+                </p>
+              )}
             </div>
 
             <div>
