@@ -9,13 +9,13 @@ import { cn } from "@/lib/utils";
 import CareIcon from "@/CAREUI/icons/CareIcon";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import DialogModal from "@/components/Common/Dialog";
 import FilePreviewDialog from "@/components/Common/FilePreviewDialog";
 import { StateInterface } from "@/components/Files/FileUpload";
-import TextFormField from "@/components/Form/FormFields/TextFormField";
 import { FileUploadModel } from "@/components/Patient/models";
 
 import {
@@ -440,16 +440,19 @@ export default function useFileManager(
           className="flex w-full flex-col"
         >
           <div>
-            <TextFormField
+            <Label>{t("enter_the_file_name")}</Label>
+            <Input
               name="editFileName"
               id="edit-file-name"
-              label="Enter the file name"
               value={editDialogueOpen?.name}
               onChange={(e) => {
-                setEditDialogueOpen({ ...editDialogueOpen, name: e.value });
+                setEditDialogueOpen({
+                  ...editDialogueOpen,
+                  name: e.target.value,
+                });
               }}
-              error={editError}
             />
+            {editError && <p className="text-sm text-red-500">{editError}</p>}
           </div>
           <div className="mt-4 flex flex-col-reverse justify-end gap-2 md:flex-row">
             <Button
