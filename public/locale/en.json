@@ -956,6 +956,7 @@
   "facility": "Facility",
   "facility_actions_menu": "Facility action menu",
   "facility_added_successfully": "Facility created successfully",
+  "facility_assign_request": "What facility would you like to assign the request to?",
   "facility_consent_requests_page_title": "Patient Consent List",
   "facility_count_one": "{{count}} Facility",
   "facility_count_other": "{{count}} Facilities ",
