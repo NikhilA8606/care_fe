@@ -278,7 +278,6 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
               <Autocomplete
                 options={facilityOptions ?? []}
                 placeholder={t("facility_assign_request_placeholder")}
-                className="w-[calc(100vw-2rem)] sm:max-w-min sm:min-w-64"
                 value={state.form.assigned_facility}
                 onChange={(selected) =>
                   setFacility(selected, "assigned_facility")
