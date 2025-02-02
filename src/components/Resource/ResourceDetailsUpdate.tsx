@@ -1,11 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { t } from "i18next";
 import { navigate, useQueryParams } from "raviger";
-import { useEffect, useReducer, useState } from "react";
+import { useReducer, useState } from "react";
 import { toast } from "sonner";
 
 import Card from "@/CAREUI/display/Card";
 
-import Autocomplete, { AutoCompleteOption } from "@/components/ui/autocomplete";
+import Autocomplete from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,10 +28,12 @@ import { UserModel } from "@/components/Users/models";
 
 import useAppHistory from "@/hooks/useAppHistory";
 
-import { RESOURCE_CHOICES } from "@/common/constants";
+import { RESOURCE_STATUS_CHOICES } from "@/common/constants";
 
 import routes from "@/Utils/request/api";
+import query from "@/Utils/request/query";
 import request from "@/Utils/request/request";
+import { PaginatedResponse } from "@/Utils/request/types";
 import useTanStackQueryInstead from "@/Utils/request/useQuery";
 import { FacilityData } from "@/types/facility/facility";
 import facilityApi from "@/types/facility/facilityApi";
@@ -38,9 +41,8 @@ import { UpdateResourceRequest } from "@/types/resourceRequest/resourceRequest";
 
 interface resourceProps {
   id: string;
+  facilityId: string;
 }
-
-const resourceStatusOptions = RESOURCE_CHOICES.map((obj) => obj.text);
 
 const initForm: Partial<UpdateResourceRequest> = {
   assigned_facility: null,
@@ -71,31 +73,6 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
   const [qParams, _] = useQueryParams();
   const [isLoading, setIsLoading] = useState(true);
   const [assignedUser, SetAssignedUser] = useState<UserModel>();
-  const [data, setData] = useState<AutoCompleteOption[]>([]);
-  const query = {
-    limit: 50,
-    offset: 0,
-    search_text: "",
-    all: true,
-    facility_type: 1510,
-    exclude_user: "",
-  };
-  useEffect(() => {
-    const retriveData = async () => {
-      const { data } = await request(facilityApi.getAllFacilities, { query });
-      const facilities: AutoCompleteOption[] = [];
-      data?.results!.map((facility: FacilityData) => {
-        facilities.push({
-          label: facility.name,
-          value: facility.id,
-        });
-      });
-      setData(facilities);
-    };
-
-    retriveData();
-  }, [data]);
-
   const resourceFormReducer = (state = initialState, action: any) => {
     switch (action.type) {
       case "set_form": {
@@ -116,6 +93,26 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
   };
 
   const [state, dispatch] = useReducer(resourceFormReducer, initialState);
+
+  const { data: facilitiesResponse } = useQuery<
+    PaginatedResponse<FacilityData>
+  >({
+    queryKey: ["facilities", qParams],
+    queryFn: query.debounced(facilityApi.getAllFacilities, {
+      queryParams: {
+        name: qParams.name,
+        ...(qParams.facility_type && { facility_type: qParams.facility_type }),
+        ...(qParams.organization && {
+          organization: qParams.organization,
+        }),
+      },
+    }),
+  });
+
+  const facilityOptions = facilitiesResponse?.results.map((facility) => ({
+    label: facility.name,
+    value: facility.id,
+  }));
 
   const { loading: assignedUserLoading } = useTanStackQueryInstead(
     routes.userList,
@@ -156,6 +153,12 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
     dispatch({ type: "set_form", form });
   };
 
+  const setFacility = (selected: any, name: string) => {
+    const form = { ...state.form };
+    form[name] = selected;
+    dispatch({ type: "set_form", form });
+  };
+
   const { data: resourceDetails } = useTanStackQueryInstead(
     routes.getResourceDetails,
     {
@@ -163,7 +166,7 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
       onResponse: ({ res, data }) => {
         if (res && data) {
           const d = data;
-          d["status"] = qParams.status || data.status;
+          d["status"] = qParams.status || data.status.toLowerCase();
           dispatch({ type: "set_form", form: d });
         }
         setIsLoading(false);
@@ -182,7 +185,7 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
         status: state.form.status,
         origin_facility: state.form.origin_facility?.id,
         assigned_facility: state.form?.assigned_facility?.id,
-        emergency: state.form.emergency,
+        emergency: [true, "true"].includes(state.form.emergency),
         title: state.form.title,
         reason: state.form.reason,
         assigned_to: state.form.assigned_to,
@@ -205,7 +208,7 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
       if (res && res.status == 200 && data) {
         dispatch({ type: "set_form", form: data });
         toast.success(t("request_updated_successfully"));
-        navigate(`/resource/${props.id}`);
+        navigate(`/facility/${props.facilityId}/resource/${props.id}`);
       } else {
         setIsLoading(false);
       }
@@ -219,7 +222,7 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
   return (
     <Page
       title="Update Request"
-      backUrl={`/resource/${props.id}`}
+      backUrl={`/facility/${props.facilityId}/resource/${props.id}`}
       crumbsReplacements={{ [props.id]: { name: resourceDetails?.title } }}
     >
       <div className="mt-4">
@@ -237,30 +240,35 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
                   <span>{state.form.status || "Select an option"}</span>
                 </SelectTrigger>
                 <SelectContent>
-                  {resourceStatusOptions.map((option, index) => (
-                    <SelectItem key={index} value={option}>
-                      {option}
+                  {RESOURCE_STATUS_CHOICES.map((option) => (
+                    <SelectItem
+                      key={option.text}
+                      value={option.text}
+                      onSelect={() =>
+                        handleChange({ name: "status", value: option.text })
+                      }
+                    >
+                      {t(`resource_status__${option.text}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
             <div className="md:col-span-1">
-              <div className="">
-                <Label className="text-gray-700 mt-2 mb-2">
-                  {t("assigned_to")}
-                </Label>
-                {assignedUserLoading ? (
-                  <CircularProgress />
-                ) : (
-                  <UserAutocomplete
-                    value={assignedUser === null ? undefined : assignedUser}
-                    onChange={handleOnSelect}
-                    error=""
-                    name="assigned_to"
-                  />
-                )}
-              </div>
+              <Label className="text-gray-700 mt-2 mb-3">
+                {t("assigned_to")}
+              </Label>
+              {assignedUserLoading ? (
+                <CircularProgress />
+              ) : (
+                <UserAutocomplete
+                  value={assignedUser === null ? undefined : assignedUser}
+                  onChange={handleOnSelect}
+                  error=""
+                  name="assigned_to"
+                />
+              )}
             </div>
 
             <div>
@@ -268,12 +276,13 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
                 {t("facility_assign_request")}
               </Label>
               <Autocomplete
-                options={data}
+                options={facilityOptions ?? []}
+                placeholder={t("facility_assign_request_placeholder")}
+                className="w-[calc(100vw-2rem)] sm:max-w-min sm:min-w-64"
                 value={state.form.assigned_facility}
-                onChange={(value) =>
-                  handleChange({ name: "assigned_facility", value })
+                onChange={(selected) =>
+                  setFacility(selected, "assigned_facility")
                 }
-                placeholder="Select Facility"
               />
             </div>
 
@@ -304,7 +313,7 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
               <Textarea
                 rows={5}
                 name="reason"
-                placeholder="Type your description here"
+                placeholder={t("request_reason_placeholder")}
                 value={state.form.reason}
                 onChange={(e) =>
                   handleChange({ name: e.target.name, value: e.target.value })

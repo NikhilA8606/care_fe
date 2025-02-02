@@ -48,19 +48,17 @@ export function UserCard({ user, className, facilityId }: Props) {
             <Avatar
               imageUrl={user.read_profile_picture_url}
               name={name}
-              className="h-32 w-32"
+              className="h-32 w-32 rounded-lg"
             />
 
             <div className="flex grow flex-col min-w-0">
               <h3 className="truncate text-xl font-semibold">{name}</h3>
-              <p className="text-sm text-muted-foreground">{user.user_type}</p>
+              <p className="text-sm text-gray-500">{user.user_type}</p>
 
               {user.qualification && (
                 <>
                   <p className="text-xs mt-3">{t("education")}: </p>
-                  <p className="text-sm text-muted-foreground">
-                    {user.qualification}
-                  </p>
+                  <p className="text-sm text-gray-500">{user.qualification}</p>
                 </>
               )}
             </div>
