@@ -11,6 +11,7 @@ import Card from "@/CAREUI/display/Card";
 import CareIcon from "@/CAREUI/icons/CareIcon";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Autocomplete from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -34,7 +35,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
-import { FacilitySelect } from "@/components/Common/FacilitySelect";
 import Loading from "@/components/Common/Loading";
 import Page from "@/components/Common/Page";
 
@@ -46,7 +46,10 @@ import { RESOURCE_CATEGORY_CHOICES } from "@/common/constants";
 import routes from "@/Utils/request/api";
 import query from "@/Utils/request/query";
 import request from "@/Utils/request/request";
+import { PaginatedResponse } from "@/Utils/request/types";
 import validators from "@/Utils/validators";
+import { FacilityData } from "@/types/facility/facility";
+import facilityApi from "@/types/facility/facilityApi";
 import { CreateResourceRequest } from "@/types/resourceRequest/resourceRequest";
 
 interface ResourceProps {
@@ -57,6 +60,7 @@ export default function ResourceCreate(props: ResourceProps) {
   const { goBack } = useAppHistory();
   const { facilityId } = props;
   const { t } = useTranslation();
+  const [qParams, _] = useQueryParams();
   const [isLoading, setIsLoading] = useState(false);
   const [{ related_patient }] = useQueryParams();
   const authUser = useAuthUser();
@@ -89,6 +93,26 @@ export default function ResourceCreate(props: ResourceProps) {
       }),
     enabled: !!facilityId,
   });
+
+  const { data: facilitiesResponse } = useQuery<
+    PaginatedResponse<FacilityData>
+  >({
+    queryKey: ["facilities", qParams],
+    queryFn: query.debounced(facilityApi.getAllFacilities, {
+      queryParams: {
+        name: qParams.name,
+        ...(qParams.facility_type && { facility_type: qParams.facility_type }),
+        ...(qParams.organization && {
+          organization: qParams.organization,
+        }),
+      },
+    }),
+  });
+
+  const facilityOptions = facilitiesResponse?.results.map((facility) => ({
+    label: facility.name,
+    value: facility.id,
+  }));
 
   const form = useForm<ResourceFormValues>({
     resolver: zodResolver(resourceFormSchema),
@@ -199,11 +223,17 @@ export default function ResourceCreate(props: ResourceProps) {
                           {t("facility_for_care_support")}
                         </FormLabel>
                         <FormControl>
-                          <FacilitySelect
-                            multiple={false}
-                            name="assigned_facility"
-                            selected={field.value}
-                            setSelected={field.onChange}
+                          <Autocomplete
+                            options={facilityOptions ?? []}
+                            value={field.value?.id ?? ""}
+                            placeholder={t("start_typing_to_search")}
+                            onChange={(value) => {
+                              const facility =
+                                facilitiesResponse?.results.find(
+                                  (f) => f.id === value,
+                                ) ?? null;
+                              form.setValue("assigned_facility", facility);
+                            }}
                           />
                         </FormControl>
                         <FormDescription>
