@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { t } from "i18next";
 import { navigate, useQueryParams } from "raviger";
 import { useReducer, useState } from "react";
@@ -5,19 +6,23 @@ import { toast } from "sonner";
 
 import Card from "@/CAREUI/display/Card";
 
+import Autocomplete from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import CircularProgress from "@/components/Common/CircularProgress";
-import { FacilitySelect } from "@/components/Common/FacilitySelect";
 import Loading from "@/components/Common/Loading";
 import Page from "@/components/Common/Page";
 import UserAutocomplete from "@/components/Common/UserAutocompleteFormField";
-import { FieldLabel } from "@/components/Form/FormFields/FormField";
-import RadioFormField from "@/components/Form/FormFields/RadioFormField";
-import { SelectFormField } from "@/components/Form/FormFields/SelectFormField";
-import TextFormField from "@/components/Form/FormFields/TextFormField";
 import { FieldChangeEvent } from "@/components/Form/FormFields/Utils";
 import { UserModel } from "@/components/Users/models";
 
@@ -26,8 +31,12 @@ import useAppHistory from "@/hooks/useAppHistory";
 import { RESOURCE_STATUS_CHOICES } from "@/common/constants";
 
 import routes from "@/Utils/request/api";
+import query from "@/Utils/request/query";
 import request from "@/Utils/request/request";
+import { PaginatedResponse } from "@/Utils/request/types";
 import useTanStackQueryInstead from "@/Utils/request/useQuery";
+import { FacilityData } from "@/types/facility/facility";
+import facilityApi from "@/types/facility/facilityApi";
 import { UpdateResourceRequest } from "@/types/resourceRequest/resourceRequest";
 
 interface resourceProps {
@@ -84,6 +93,26 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
   };
 
   const [state, dispatch] = useReducer(resourceFormReducer, initialState);
+
+  const { data: facilitiesResponse } = useQuery<
+    PaginatedResponse<FacilityData>
+  >({
+    queryKey: ["facilities", qParams],
+    queryFn: query.debounced(facilityApi.getAllFacilities, {
+      queryParams: {
+        name: qParams.name,
+        ...(qParams.facility_type && { facility_type: qParams.facility_type }),
+        ...(qParams.organization && {
+          organization: qParams.organization,
+        }),
+      },
+    }),
+  });
+
+  const facilityOptions = facilitiesResponse?.results.map((facility) => ({
+    label: facility.name,
+    value: facility.id,
+  }));
 
   const { loading: assignedUserLoading } = useTanStackQueryInstead(
     routes.userList,
@@ -200,55 +229,81 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
         <Card className="flex w-full flex-col">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="md:col-span-1">
-              <SelectFormField
-                label="Status"
-                name="status"
+              <Label className="text-gray-700 mt-2 mb-3">{t("status")}</Label>
+              <Select
                 value={state.form.status}
-                options={RESOURCE_STATUS_CHOICES}
-                optionValue={(option) => option.text}
-                onChange={handleChange}
-                optionLabel={(option) => t(`resource_status__${option.text}`)}
-              />
+                onValueChange={(value) =>
+                  handleChange({ name: "status", value })
+                }
+              >
+                <SelectTrigger className="mt-2">
+                  <span>{state.form.status || "Select an option"}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  {RESOURCE_STATUS_CHOICES.map((option) => (
+                    <SelectItem
+                      key={option.text}
+                      value={option.text}
+                      onSelect={() =>
+                        handleChange({ name: "status", value: option.text })
+                      }
+                    >
+                      {t(`resource_status__${option.text}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
             <div className="md:col-span-1">
-              <div className="">
-                {assignedUserLoading ? (
-                  <CircularProgress />
-                ) : (
-                  <UserAutocomplete
-                    label="Assigned To"
-                    value={assignedUser === null ? undefined : assignedUser}
-                    onChange={handleOnSelect}
-                    error=""
-                    name="assigned_to"
-                  />
-                )}
-              </div>
+              <Label className="text-gray-700 mt-2 mb-3">
+                {t("assigned_to")}
+              </Label>
+              {assignedUserLoading ? (
+                <CircularProgress />
+              ) : (
+                <UserAutocomplete
+                  value={assignedUser === null ? undefined : assignedUser}
+                  onChange={handleOnSelect}
+                  error=""
+                  name="assigned_to"
+                />
+              )}
             </div>
 
             <div>
-              <FieldLabel>
-                What facility would you like to assign the request to
-              </FieldLabel>
-              <FacilitySelect
-                multiple={false}
-                name="assigned_facility"
-                selected={state.form.assigned_facility}
-                setSelected={(obj) => setFacility(obj, "assigned_facility")}
-                errors={state.errors.assigned_facility}
+              <Label className="text-gray-700 -mt-3 mb-3">
+                {t("facility_assign_request")}
+              </Label>
+              <Autocomplete
+                options={facilityOptions ?? []}
+                placeholder={t("facility_assign_request_placeholder")}
+                className="w-[calc(100vw-2rem)] sm:max-w-min sm:min-w-64"
+                value={state.form.assigned_facility}
+                onChange={(selected) =>
+                  setFacility(selected, "assigned_facility")
+                }
               />
             </div>
 
             <div className="md:col-span-2">
-              <TextFormField
+              <Label className="text-gray-700 mb-3 mt-1">
+                {t("request_title")}
+              </Label>
+              <Input
                 name="title"
                 type="text"
-                label="Request Title*"
                 placeholder="Type your title here"
                 value={state.form.title}
-                onChange={handleChange}
-                error={state.errors.title}
+                onChange={(e) =>
+                  handleChange({ name: e.target.name, value: e.target.value })
+                }
               />
+              {state.errors.title && (
+                <p className="text-red-500 text-sm mt-2">
+                  {state.errors.emergency}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">
@@ -272,16 +327,28 @@ export const ResourceDetailsUpdate = (props: resourceProps) => {
             </div>
 
             <div>
-              <RadioFormField
+              <Label className="text-gray-700 mb-3 mt-1">
+                {t("is_this_an_emergency")}
+              </Label>
+              <RadioGroup
                 name="emergency"
-                onChange={handleChange}
-                label={"Is this an emergency?"}
-                options={[true, false]}
-                optionLabel={(o) => (o ? "Yes" : "No")}
-                optionValue={(o) => String(o)}
                 value={String(state.form.emergency)}
-                error={state.errors.emergency}
-              />
+                onValueChange={(value) =>
+                  handleChange({ name: "emergency", value: value === "true" })
+                }
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="true" />
+                  <Label>{t("yes")}</Label>
+                  <RadioGroupItem value="false" />
+                  <Label>{t("no")}</Label>
+                </div>
+              </RadioGroup>
+              {state.errors.emergency && (
+                <p className="text-red-500 text-sm mt-2">
+                  {state.errors.emergency}
+                </p>
+              )}
             </div>
 
             <div className="mt-4 flex flex-col justify-between gap-2 md:col-span-2 md:flex-row">

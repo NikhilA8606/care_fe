@@ -32,6 +32,8 @@ interface AutocompleteProps {
   onChange: (value: string) => void;
   onSearch?: (value: string) => void;
   placeholder?: string;
+  className?: string;
+  initialOptionIndex?: number;
   noOptionsMessage?: string;
   disabled?: boolean;
   align?: "start" | "center" | "end";
@@ -53,7 +55,6 @@ export default function Autocomplete({
 }: AutocompleteProps) {
   const [open, setOpen] = React.useState(false);
   const isMobile = useBreakpoints({ default: true, sm: false });
-
   const commandContent = (
     <>
       <CommandInput
