@@ -54,7 +54,7 @@ export const SummaryPanelEncounterDetails = () => {
     <div className="flex flex-col gap-2">
       <div className="hidden @xs:flex flex-col sm:flex-row p-3 bg-white -mt-1 rounded-lg gap-4 shadow">
         <div className="flex flex-col gap-4 sm:border-r border-gray-200 pr-4">
-          <div className="flex flex-row gap-14">
+          <div className="flex flex-row gap-4">
             <div className="flex flex-col gap-4">
               <div>
                 <span className="text-sm font-medium text-gray-700">
@@ -240,22 +240,20 @@ export const SummaryPanelEncounterDetails = () => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="text-sm text-gray-950 font-semibold flex flex-wrap gap-2">
-                {patient?.instance_identifiers?.map((identifier) => (
-                  <div
-                    key={identifier.config.id}
-                    className="flex md:flex-col gap-0.5 items-center md:items-start"
-                  >
-                    <span className="text-xs text-gray-600 w-32 md:w-auto">
-                      {identifier.config.config.display}:{" "}
-                    </span>
-                    <span className="text-sm font-semibold">
-                      {identifier.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <div className="text-sm text-gray-950 font-semibold flex flex-wrap gap-2">
+              {patient?.instance_identifiers?.map((identifier) => (
+                <div
+                  key={identifier.config.id}
+                  className="flex md:flex-col gap-2 items-center md:items-start"
+                >
+                  <span className="text-xs text-gray-600 md:w-auto">
+                    {identifier.config.config.display}:{" "}
+                  </span>
+                  <span className="text-sm font-semibold">
+                    {identifier.value}
+                  </span>
+                </div>
+              ))}
             </div>
 
             <div>
